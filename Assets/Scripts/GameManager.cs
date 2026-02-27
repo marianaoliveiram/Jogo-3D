@@ -1,26 +1,59 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public GameObject hazardPrefab;
-    public TMPro.TextMeshProUGUI scoreText;
-    public Image backgroundMenu;
+    [SerializeField]
+    private GameObject hazardPrefab;
+    [SerializeField]
+    private TMPro.TextMeshProUGUI scoreText;
+    [SerializeField]
+    private Image backgroundMenu;
+    [SerializeField]
+    
+    private GameObject cinemachineCamera;
+    [SerializeField]
+    private GameObject zoomCamera;
+    [SerializeField]
+    private GameObject gameOverMenu;
+    [SerializeField]
+    private GameObject player;
+
     private int score;
     private float timer;
-    private static bool gameOver;
+    private bool gameOver;
+    private Coroutine hazardsCoroutine;
+    private int highScore;
 
     private static GameManager instance;
+    private const string HighScorePreferenceKey = "HighScore";
+
     public static GameManager Instance => instance;
-    public void Enable()
-    {
-        gameObject.SetActive(true);
-    }
+    public int HighScore => highScore;
+
     void Start()
     {
         instance = this;
-        StartCoroutine(SpawnHazards());
+
+        highScore = PlayerPrefs.GetInt(HighScorePreferenceKey);
+        Debug.Log(highScore);
+    }
+
+    private void OnEnable()
+    {
+        player.SetActive(true);
+
+        zoomCamera.SetActive(false);
+        cinemachineCamera.SetActive(true);
+
+        gameOver = false;
+        score = 0;
+        scoreText.text = "0";
+        timer = 0;
+
+        hazardsCoroutine = StartCoroutine(SpawnHazards());
     }
 
     void Update()
@@ -29,13 +62,12 @@ public class GameManager : MonoBehaviour
         {
             if(Time.timeScale == 0)
             {
-                StartCoroutine(ScaleTime(0, 1, 0.5f));
-                backgroundMenu.gameObject.SetActive(false);
+                UnPause();
             }  
+
             if(Time.timeScale == 1)
             {
-                StartCoroutine(ScaleTime(1, 0, 0.5f));
-                backgroundMenu.gameObject.SetActive(true);
+                Pause();
             }
         }
 
@@ -53,22 +85,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    IEnumerator ScaleTime(float start, float end, float duration)
+    private void SetTimeScale(float value)
     {
-        float lastTime = Time.realtimeSinceStartup;
-        float timer = 0.0f;
-
-        while (timer < duration)
-        {
-            Time.timeScale = Mathf.Lerp(start, end, timer / duration);
-            Time.fixedDeltaTime = 0.02f * Time.timeScale;
-            timer += Time.realtimeSinceStartup - lastTime;
-            lastTime = Time.realtimeSinceStartup;
-            yield return null;
-        }
-
-        Time.timeScale = end;
-        Time.fixedDeltaTime = 0.02f * end;
+        Time.timeScale = value;
+        Time.fixedDeltaTime = 0.02f * value;
     }
 
     private IEnumerator SpawnHazards()
@@ -88,8 +108,48 @@ public class GameManager : MonoBehaviour
         yield return SpawnHazards();
     }
 
-    public static void GameOver()
+    public void GameOver()
     {
+        StopCoroutine(hazardsCoroutine);
         gameOver = true;
+
+        if(Time.timeScale < 1)
+        {
+            UnPause();
+        }
+
+        if(score > highScore)
+        {
+            highScore = score;
+            PlayerPrefs.SetInt(HighScorePreferenceKey, highScore);
+            Debug.Log(highScore);
+        }
+
+        cinemachineCamera.SetActive(false);
+        zoomCamera.SetActive(true);
+
+        gameObject.SetActive(false);
+        gameOverMenu.SetActive(true);
+    }
+
+    private void Pause()
+    {
+        LeanTween.value(1, 0, 0.75f)
+                            .setOnUpdate(SetTimeScale)
+                            .setIgnoreTimeScale(true);
+        backgroundMenu.gameObject.SetActive(true);
+    }
+
+    private void UnPause()
+    {
+        LeanTween.value(Time.timeScale, 1, 0.75f)
+                        .setOnUpdate(SetTimeScale)
+                        .setIgnoreTimeScale(true);
+        backgroundMenu.gameObject.SetActive(false);
+    }
+
+    public void Enable()
+    {
+        gameObject.SetActive(true);
     }
 }

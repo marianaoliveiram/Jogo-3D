@@ -2,7 +2,9 @@ using UnityEngine;
 
 public class AutoDestroyer : MonoBehaviour
 {
-    public float delay;
+    [SerializeField]
+    private float delay;
+    
     void Start()
     {
         Destroy(gameObject, delay);

@@ -2,10 +2,16 @@ using UnityEngine;
 
 public class MainMenu : MonoBehaviour
 {
-    public GameManager gameManager;
+    [SerializeField]
+    private GameManager gameManager;
 
-    void Start()
+    [SerializeField]
+    private RectTransform scoreRectTransform;
+
+    private void Start()
     {
+        scoreRectTransform.anchoredPosition = new Vector2(scoreRectTransform.anchoredPosition.x, 60);
+
         GetComponentInChildren<TMPro.TextMeshProUGUI>().gameObject.LeanScale(new Vector3(1.2f, 1.2f), 0.4f).setLoopPingPong();
     }
     public void Play()
@@ -15,6 +21,8 @@ public class MainMenu : MonoBehaviour
 
     private void onComplete()
     {
+        LeanTween.moveY(scoreRectTransform, -40f, 0.75f).setEaseOutBounce();
+
         gameManager.Enable();
         Destroy(gameObject);
     }

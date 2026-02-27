@@ -4,20 +4,23 @@ using MyGameManager = GameManager;
 
 public class Player : MonoBehaviour
 {
+    [SerializeField]
+    private float forceMultiplier = 10f;
+    [SerializeField]
+    private float maximumVelocity = 4f;
 
-    public float forceMultiplier = 10f;
-    public float maximumVelocity = 4f;
     private Rigidbody rb;
-    public ParticleSystem deathParticles;
-    private CinemachineImpulseSource cinemachineImpulseSource;
-    public GameObject cinemachineCamera;
-    public GameObject zoomCamera;
 
-    void Start()
+    [SerializeField]
+    private ParticleSystem deathParticles;
+    private CinemachineImpulseSource cinemachineImpulseSource;
+
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
         cinemachineImpulseSource = GetComponent<CinemachineImpulseSource>();
     }
+
     void Update()
     {
         if(GameManager.Instance == null)
@@ -33,17 +36,36 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        transform.position = new Vector3(0, 0.768f, -1.35f);
+        transform.rotation = Quaternion.identity;
+        rb.linearVelocity = Vector3.zero;
+    }
+
     void OnCollisionEnter(Collision collision)
     {
         if(collision.gameObject.CompareTag("Hazard"))
         {
-            MyGameManager.GameOver();
-            Destroy(gameObject);
+            GameOver();
+
             Instantiate(deathParticles, transform.position, Quaternion.identity);
             cinemachineImpulseSource.GenerateImpulse();
-
-            cinemachineCamera.SetActive(false);
-            zoomCamera.SetActive(true);
         }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if(other.CompareTag("FallDown"))
+        {
+            GameOver();
+        }
+    }
+
+    private void GameOver()
+    {
+        MyGameManager.Instance.GameOver();
+
+        gameObject.SetActive(false);
     }
 }
